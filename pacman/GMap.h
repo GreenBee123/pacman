@@ -27,17 +27,6 @@ public:
 	virtual ~GMap();
 	GMap() 
 	{
-		if (GetAsyncKeyState('B') & 0 * 8000)
-		{
-			MessageBoxA(NULL, "你无意中发现了秘籍", "", MB_OK);
-			for (int i = 0; i < MAPLENTH; i++)
-			{
-				for (int j = 0; j < MAPLENTH; j++)
-				{
-					peaMapData[i][j] = false;
-				}
-			}
-		}
 	}
 	friend class GObject;//允许物体类使用直线的起点和终点信息做检测碰撞
 	friend class PacMan;//允许大嘴访问豆子地图

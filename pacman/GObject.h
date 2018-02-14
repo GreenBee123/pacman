@@ -113,25 +113,25 @@ public:
 	}
 };
 
-class BuleOne :public Enermy//สุฮภ
+class BlueOne :public RedOne//สุฮภ
 {
 protected:
 	void virtual MakeDecision(bool b);
 public:
 	void Draw(HDC &hdc);
-	BuleOne(int x, int y) :Enermy(x, y)
+	BlueOne(int x, int y) :RedOne(x, y)
 	{
 		color = RGB(0, 0, 255);
 	}
 };
 
-class YellowOne :public Enermy//สุฮภ
+class YellowOne :public RedOne//สุฮภ
 {
 protected:
 	void virtual MakeDecision(bool b);
 public:
 	void Draw(HDC &hdc);
-	YellowOne(int x, int y) :Enermy(x, y)
+	YellowOne(int x, int y) :RedOne(x, y)
 	{
 		color = RGB(200, 200, 100);
 	}

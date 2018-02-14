@@ -16,7 +16,7 @@ int GObject::GetArray()//返回数组首地址
 
 int GObject::PtTransform(int k)//坐标转换函数
 {
-	return (k - (pStage->LD / 2) / pStage->LD);
+	return (k - (pStage->LD) / 2) / pStage->LD;
 }
 
 //判断物体是否到达逻辑坐标位置
@@ -94,8 +94,8 @@ bool GObject::Collision()
 			{
 				b = true;//撞墙了
 
-				break;
 			}
+				break;
 		}
 		case UP://如果朝向为上
 		{
@@ -164,8 +164,8 @@ bool GObject::Collision()
 		if (m_nRow > 0 && !pStage->mapData[m_nRow - 1][m_nArray])
 		{
 			b = true;//撞墙了
+			break;
 		}
-		break;
 		m_ptCenter.y -= m_nSpeed;
 		if (m_ptCenter.y < MIN)
 		{
@@ -180,8 +180,8 @@ bool GObject::Collision()
 		if (m_nRow < MAPLENTH - 1 && !pStage->mapData[m_nRow + 1][m_nArray])
 		{
 			b = true;//撞墙了
+			break;
 		}
-		break;
 		m_ptCenter.y += m_nSpeed;
 		if (m_ptCenter.y > MAX)
 		{
@@ -236,6 +236,7 @@ bool PacMan::IsWin()
 			}
 		}
 	}
+	return true;//没有豆子 胜利
 }
 
 POINT PacMan::GetPos()
@@ -272,7 +273,7 @@ void PacMan::Draw(HDC &memDC)
 		{
 			x1 = m_ptCenter.x + offsetX;
 			x2 = m_ptCenter.x - offsetX;
-			y2 = y1 = m_ptCenter.y - offsetY;
+			y2 = y1 = m_ptCenter.y + offsetY;
 			break;
 		}
 		case LEFT:
@@ -284,13 +285,11 @@ void PacMan::Draw(HDC &memDC)
 		}
 		case RIGHT:
 		{
-			x2 = x1 = m_ptCenter.x - offsetX;
+			x2 = x1 = m_ptCenter.x + offsetX;
 			y1 = m_ptCenter.y - offsetY;
 			y2 = m_ptCenter.y + offsetY;
 			break;
 		}
-		default:
-			break;
 		}
 		//画出弧弦
 		Arc(memDC, m_ptCenter.x - DISTANCE, m_ptCenter.y - DISTANCE,
@@ -306,7 +305,7 @@ void PacMan::Draw(HDC &memDC)
 	else if (m_nFrame % 3 == 0)//第三帧，也就是整个圆形大嘴
 	{
 		Ellipse(memDC, m_ptCenter.x - DISTANCE, m_ptCenter.y - DISTANCE,
-			m_ptCenter.x + DISTANCE, m_ptCenter.y - DISTANCE);
+			m_ptCenter.x + DISTANCE, m_ptCenter.y + DISTANCE);
 	}
 
 	else//嘴完全张开的形状
@@ -318,32 +317,30 @@ void PacMan::Draw(HDC &memDC)
 		{
 			x1 = m_ptCenter.x - DISTANCE;
 			x2 = m_ptCenter.x + DISTANCE;
-			y2 = y1 = m_ptCenter.y ;
+			y2 = y1 = m_ptCenter.y;
 			break;
 		}
 		case DOWN:
 		{
 			x1 = m_ptCenter.x + DISTANCE;
 			x2 = m_ptCenter.x - DISTANCE;
-			y2 = y1 = m_ptCenter.y ;
+			y2 = y1 = m_ptCenter.y;
 			break;
 		}
 		case LEFT:
 		{
-			x2 = x1 = m_ptCenter.x ;
+			x2 = x1 = m_ptCenter.x;
 			y1 = m_ptCenter.y + DISTANCE;
 			y2 = m_ptCenter.y - DISTANCE;
 			break;
 		}
 		case RIGHT:
 		{
-			x2 = x1 = m_ptCenter.x ;
+			x2 = x1 = m_ptCenter.x;
 			y1 = m_ptCenter.y - DISTANCE;
 			y2 = m_ptCenter.y + DISTANCE;
 			break;
 		}
-		default:
-			break;
 		}
 		//画出弧弦
 		Arc(memDC, m_ptCenter.x - DISTANCE, m_ptCenter.y - DISTANCE,
@@ -356,4 +353,245 @@ void PacMan::Draw(HDC &memDC)
 		LineTo(memDC, x2, y2);
 	}
 	m_nFrame++;//画下一帧
+}
+
+//Enermy成员定义
+std::shared_ptr<PacMan>Enermy::player = nullptr;
+
+//抓住！游戏结束
+void Enermy::Catch()
+{
+	int DX = m_ptCenter.x - player->GetPos().x;
+	int DY = m_ptCenter.y - player->GetPos().y;
+	if ((-RD < DX&&DX < RD) && (-RD < DY&&DY < RD))
+	{
+		player->SetOver();
+	}
+}
+
+//画自己
+void Enermy::Draw(HDC &hdc)
+{
+	HPEN pen = ::CreatePen(0, 0, color);
+	HPEN oldpen = (HPEN)SelectObject(hdc, pen);
+	Arc(hdc, m_ptCenter.x - DISTANCE, m_ptCenter.y - DISTANCE,
+		m_ptCenter.x + DISTANCE, m_ptCenter.y + DISTANCE,
+		m_ptCenter.x + DISTANCE, m_ptCenter.y,
+		m_ptCenter.x - DISTANCE, m_ptCenter.y);//画一个半圆形
+	int const LEGLENTH = (DISTANCE) / (LEGCOUNTS);
+	//根据帧数来绘制身体和腿部
+	if (m_nFrame % 2 == 0)
+	{
+		//矩形的身子
+		MoveToEx(hdc, m_ptCenter.x - DISTANCE, m_ptCenter.y, NULL);
+		LineTo(hdc, m_ptCenter.x - DISTANCE, m_ptCenter.y + DISTANCE - LEGLENTH);
+
+		MoveToEx(hdc, m_ptCenter.x + DISTANCE, m_ptCenter.y, NULL);
+		LineTo(hdc, m_ptCenter.x + DISTANCE, m_ptCenter.y + DISTANCE - LEGLENTH);
+
+		//开始画jio
+		for (int i = 0; i < LEGCOUNTS; i++)
+		{
+			Arc(hdc,
+				m_ptCenter.x - DISTANCE + i * 2 * LEGLENTH,
+				m_ptCenter.y + DISTANCE - 2 * LEGLENTH,
+				m_ptCenter.x - DISTANCE + (i + 1) * 2 * LEGLENTH,
+				m_ptCenter.y + DISTANCE,
+				m_ptCenter.x - DISTANCE + i * 2 * LEGLENTH,
+				m_ptCenter.y + DISTANCE - LEGLENTH,
+				m_ptCenter.x - DISTANCE + (i + 1) * 2 * LEGLENTH,
+				m_ptCenter.y + DISTANCE - LEGLENTH
+			);
+		}
+	}
+
+	else
+	{
+		MoveToEx(hdc, m_ptCenter.x - DISTANCE, m_ptCenter.y, NULL);
+		LineTo(hdc, m_ptCenter.x - DISTANCE, m_ptCenter.y + DISTANCE);
+
+		MoveToEx(hdc, m_ptCenter.x + DISTANCE, m_ptCenter.y, NULL);
+		LineTo(hdc, m_ptCenter.x + DISTANCE, m_ptCenter.y + DISTANCE);
+
+		MoveToEx(hdc, m_ptCenter.x - DISTANCE, m_ptCenter.y + DISTANCE, NULL);
+		LineTo(hdc, m_ptCenter.x - DISTANCE + LEGLENTH, m_ptCenter.y + DISTANCE - LEGLENTH);
+
+		//开始画jio
+		for (int i = 0; i < LEGCOUNTS; i++)
+		{
+			Arc(hdc,
+				m_ptCenter.x - DISTANCE + (i + 1 * 2) * LEGLENTH,
+				m_ptCenter.y + DISTANCE - 2 * LEGLENTH,
+				m_ptCenter.x - DISTANCE + (i + 3 * 2) * LEGLENTH,
+				m_ptCenter.y + DISTANCE,
+				m_ptCenter.x - DISTANCE + (i + 1) * 2 * LEGLENTH,
+				m_ptCenter.y + DISTANCE - LEGLENTH,
+				m_ptCenter.x - DISTANCE + (i + 3 * 2) * LEGLENTH,
+				m_ptCenter.y + DISTANCE - LEGLENTH
+			);
+		}
+
+		MoveToEx(hdc, m_ptCenter.x + DISTANCE, m_ptCenter.y + DISTANCE, NULL);
+		LineTo(hdc, m_ptCenter.x + DISTANCE - LEGLENTH, m_ptCenter.y + DISTANCE - LEGLENTH);
+
+		//根据方向画眼睛
+		int R = DISTANCE / 5;
+		switch (m_dir)
+		{
+		case UP:
+		{
+			Ellipse(hdc, m_ptCenter.x - 2 * R, m_ptCenter.y - 2 * R,
+				m_ptCenter.x, m_ptCenter.y);//画左眼
+			Ellipse(hdc, m_ptCenter.x, m_ptCenter.y - 2 * R,
+				m_ptCenter.x + 2 * R, m_ptCenter.y);//画右眼
+			break;
+		}
+		case DOWN:
+		{
+			Ellipse(hdc, m_ptCenter.x - 2 * R, m_ptCenter.y,
+				m_ptCenter.x, m_ptCenter.y + 2 * R);//画左眼
+			Ellipse(hdc, m_ptCenter.x, m_ptCenter.y,
+				m_ptCenter.x + 2 * R, m_ptCenter.y + 2 * R);//画右眼
+			break;
+		}
+		case LEFT:
+		{
+			Ellipse(hdc, m_ptCenter.x - 3 * R, m_ptCenter.y - R,
+				m_ptCenter.x, m_ptCenter.y);//画左眼
+			Ellipse(hdc, m_ptCenter.x - R, m_ptCenter.y - R,
+				m_ptCenter.x + R, m_ptCenter.y + R);//画右眼
+			break;
+		}
+		case RIGHT:
+		{
+			Ellipse(hdc, m_ptCenter.x - R, m_ptCenter.y - R,
+				m_ptCenter.x, m_ptCenter.y);//画左眼
+			Ellipse(hdc, m_ptCenter.x + R, m_ptCenter.y - R,
+				m_ptCenter.x + 3 * R, m_ptCenter.y + R);//画右眼
+			break;
+		}
+		}
+	}
+
+	m_nFrame++;//下一帧
+	SelectObject(hdc, oldpen);//还原画笔
+	DeleteObject(pen);//还原画笔对象
+	return;
+}
+
+void Enermy::action()
+{
+	bool b = Collision();//是否发生发生碰撞
+	MakeDecision(b);//设定方向
+	Catch();//开始抓捕
+}
+
+//RedOne成员
+void RedOne::Draw(HDC&hdc)
+{
+	Enermy::Draw(hdc);
+}
+
+void RedOne::MakeDecision(bool b)
+{
+	//srand(time(0));
+	int i = rand();
+	if (b) {  													// 撞到墙壁,改变方向
+		if (i % 4 == 0) { 											// 逆时针转向
+			m_dir == UP ? m_cmd = LEFT : m_cmd = UP;				// 面向上，向左拐
+		}
+		else if (i % 3 == 0) {
+			m_dir == DOWN ? m_cmd = RIGHT : m_cmd = DOWN;			// 面向下，向右拐
+		}
+		else if (i % 2 == 0) {
+			m_dir == RIGHT ? m_cmd = UP : m_cmd = RIGHT;			// 面向右，向上拐
+		}
+		else {
+			m_dir == LEFT ? m_cmd = DOWN : m_cmd = LEFT;			// 面向左，向下拐
+		}
+		return;													// 提前结束函数，返回
+	}
+
+	// 程序运行到这里，说明没有撞墙，继续处理
+	if (i % 4 == 0) {
+		m_cmd != UP ? m_dir == DOWN : m_cmd == UP;		// 非向上移动则使之面向下，否则面向上
+	}
+	else if (i % 3 == 0) {
+		m_dir != DOWN ? m_cmd = UP : m_cmd = DOWN;		// 非向下移动则使之面向上，否则面向下
+	}
+	else if (i % 2 == 0) {
+		m_dir != RIGHT ? m_cmd = LEFT : m_cmd = RIGHT;	// 非向右移动则使之面向左，否则面向右
+	}
+	else {
+		m_dir != LEFT ? m_cmd = RIGHT : m_cmd = LEFT;	// 非向左移动则使之面向右，否则面向左
+	}
+}
+
+//BlueOne成员定义
+
+void BlueOne::Draw(HDC &hdc)
+{
+	Enermy::Draw(hdc);
+}
+
+void BlueOne::MakeDecision(bool b)
+{
+
+	const int DR = this->m_nRow - player->GetRow();
+	const int DA = this->m_nArray - player->GetArray();
+	if (!b && DR == 0) {
+		if (DA <= BLUE_ALERT && DA > 0) {  // 玩家在左侧边警戒范围s
+			m_cmd = LEFT;                   // 向左移动
+			return;
+		}
+		if (DA < 0 && DA >= -BLUE_ALERT) {  // 右侧警戒范围
+			m_cmd = RIGHT;                   // 向右移动
+			return;
+		}
+	}
+	if (!b && DA == 0) {
+		if (DR <= BLUE_ALERT && DR > 0) {   // 下方警戒范围
+			m_cmd = UP;                      // 向上移动
+			return;
+		}
+		if (DR < 0 && DR >= -BLUE_ALERT) {  // 上方警戒范围
+			m_cmd = DOWN;                    // 向下移动
+			return;
+		}
+	}
+	RedOne::MakeDecision(b);  //不在追踪模式时RED行为相同
+}
+
+//YellowOne成员定义
+void YellowOne::MakeDecision(bool b)
+{
+	const int DR = this->m_nRow - player->GetRow();
+	const int DA = this->m_nArray - player->GetArray();
+	if (!b) {
+		if (DR * DR > DA * DA) {
+			if (DA > 0) {  		// 玩家在左侧边警戒范围
+				m_cmd = LEFT;  	// 向左移动
+				return;
+			}
+			else if (DA < 0) {  	// 右侧警戒范围
+				m_cmd = RIGHT;	// 向右移动
+				return;
+			}
+		}
+		else {
+			if (DR > 0) {  		// 下方警戒范围
+				m_cmd = UP;		// 向上移动
+				return;
+			}
+			if (DR < 0) {  		// 上方警戒范围
+				m_cmd = DOWN;		// 向下移动
+				return;
+			}
+		}
+	}
+	RedOne::MakeDecision(b);		// 调用红色对象的函数，实现随机移动功能
+}
+void YellowOne::Draw(HDC &hdc)
+{
+	Enermy::Draw(hdc);			// 绘制自身
 }

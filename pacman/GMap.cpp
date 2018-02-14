@@ -47,6 +47,16 @@ void GMap::DrawPeas(HDC & hdc)
 			}
 		}
 	}
+
+	// 如果按下B，直接过关
+	if (GetAsyncKeyState('B') & 0x8000) {
+		MessageBoxA(NULL, "无意中您发现了秘笈", "吃豆子提示", MB_OK);
+		for (int i = 0; i < MAPLENTH; i++) {
+			for (int j = 0; j < MAPLENTH; j++) {
+				peaMapData[i][j] = false;
+			}
+		}
+	}
 }
 
 GMap::~GMap()
